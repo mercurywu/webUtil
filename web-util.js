@@ -171,7 +171,6 @@
         getByteVal: function (str, num) {
             var len = 0,
                 returnValue = '';
-            d
             for (var i = 0, l = str.length; i < l; i++) {
                 if (str[i].match(/[^\x00-\xff]/ig) != null) { //全角
                     len += 2;
@@ -200,107 +199,67 @@
                 return escape[match] || match;
             });
         },
-        /*
-         * 便条错误提示
-         * @_this {object} 目标对象
-         * @_set {object} 便条设置
-         * animation:none/fadeIn/(flipIn-->gravity)/moveInLeft/moveInTop/moveInBottom/moveInRight
-         * width:{string} **+px
-         * contents:{string} 便条内的字符串
-         * gravity:top/bottom/left/right
-         * confirm:true/false
-         */
-        noteTips: function(_this, _set){
-            var _this = _this;
-            _this.justToolsTip({
-                animation: _set.animation ? _set.animation : null,
-                width: _set.width ? _set.width : null,
-                contents: _set.contents ? _set.contents : null,
-                gravity: _set.gravity ? _set.gravity : null,
-                events: _set.events ? _set.events : null,
-                //blurFlag: _set.blurFlag ? _set.blurFlag : null,
-                //id: _set.id ? _set.id : null
-            });
+        // 获取上传文件大小 兼容IE9低版本
+        getFileSize: function (obj){
+            var filesize;
+            if(obj.files){
+                filesize = obj.files[0].size;
+            }else{
+                try{
+                    var path,fso; 
+                    path = document.getElementById('filePath').value;
+                    fso = new ActiveXObject("Scripting.FileSystemObject"); 
+                    filesize = fso.GetFile(path).size; 
+                }
+                catch(e){
+                    // 在IE9及低版本浏览器，如果不容许ActiveX控件与页面交互，点击了否，就无法获取size
+                    console.log(e.message); // Automation 服务器不能创建对象
+                    filesize = 'error'; // 无法获取
+                }
+            }
+            return filesize;
         },
         /*
-         * 便条批量提示
-         * @_this {object} 目标对象
-         * @tipFlag {boolean} 是否正确
-         * @_contents {string} 提示内容
+         * 检测是否电脑端/移动端
          */
-        batchTips: function(_this, _set){
-            var _set = _set;
-            var setPos = {};
-            var pos = { x: _this.offset().left, y: _this.offset().top };
-            var conPos = { x: _set.container.offset().left, y: _set.container.offset().top };
-            var conScrollHeight = _set.container.scrollTop();
-            var wh = { w: _this.outerWidth(), h: _this.outerHeight() };
-            var deviationX = conPos.x;
-            var deviationY = conPos.y;
-            var tipsBox = $("<div class='just-tooltip animated flipInLeft' data-type='" + _set.type +"' style='z-index: 10000000;'>" +
-                "<div class='just-con'>" + _set.contents + "</div>" +
-                "<span class='just-" + _set.gravity + "'></span>" +
-                "</div>");
-            $(_set.container).append(tipsBox);
-
-            var rightTmp = ( pos.x + wh.w / 2 ) + tipsBox.outerWidth() / 2 ;
-            var leftTmp = ( pos.x + wh.w / 2 ) - tipsBox.outerWidth() / 2 ;
-            //console.log(leftTmp)
-            switch(_set.gravity){
-                case 'top':
-                    if(rightTmp > $(window).width() ){
-                        setPos = {
-                            x: pos.x + wh.w - tipsBox.outerWidth(),
-                            y: pos.y + conScrollHeight - tipsBox.outerHeight() - _set.distance
-                        };
-                        tipsBox.find(".just-" + _set.gravity).css("left", tipsBox.outerWidth() - wh.w/2 + "px")
-                    }else if( leftTmp < 0 ){
-                        setPos = {
-                            x: pos.x,
-                            y: pos.y + conScrollHeight - tipsBox.outerHeight() - _set.distance
-                        };
-                        tipsBox.find(".just-" + _set.gravity).css("left", wh.w/2 + "px")
-                    }else{
-                        setPos = {
-                            x: pos.x - (tipsBox.outerWidth() - wh.w)/2,
-                            y: pos.y + conScrollHeight - tipsBox.outerHeight() - _set.distance
-                        };
-                    }
-                    break;
-                case 'bottom':
-                    if(rightTmp > $(window).width() ){
-                        setPos = {
-                            x: pos.x + wh.w - tipsBox.outerWidth(),
-                            y: pos.y + conScrollHeight + wh.h + _set.distance
-                        };
-                        tipsBox.find(".just-" + _set.gravity).css("left", tipsBox.outerWidth() - wh.w/2 + "px")
-                    }else if( leftTmp < 0 ){
-                        setPos = {
-                            x: pos.x,
-                            y: pos.y + conScrollHeight + wh.h + _set.distance
-                        };
-                        tipsBox.find(".just-" + this.set.gravity).css("left", wh.w/2 + "px")
-                    }else{
-                        setPos = {
-                            x: pos.x - (tipsBox.outerWidth() - wh.w)/2,
-                            y: pos.y + conScrollHeight + wh.h + _set.distance
-                        };
-                    }
-                    break;
-                case 'left':
-                    setPos = {
-                        x: pos.x - tipsBox.outerWidth() - _set.distance,
-                        y: pos.y + conScrollHeight - (tipsBox.outerHeight() - wh.h)/2
-                    };
-                    break;
-                case 'right':
-                    setPos = {
-                        x: pos.x + wh.w + _set.distance,
-                        y: pos.y + conScrollHeight - (tipsBox.outerHeight() - wh.h)/2
-                    };
-                    break;
-            }
-            tipsBox.css({"left": (setPos.x - deviationX) + "px", "top": (setPos.y - deviationY) + "px"});
+        versions: function(){
+            var u = navigator.userAgent, app = navigator.appVersion;
+            var sUserAgent = navigator.userAgent;
+            return {
+                trident: u.indexOf('Trident') > -1,
+                presto: u.indexOf('Presto') > -1, 
+                isChrome: u.indexOf("chrome") > -1, 
+                isSafari: !u.indexOf("chrome") > -1 && (/webkit|khtml/).test(u),
+                isSafari3: !u.indexOf("chrome") > -1 && (/webkit|khtml/).test(u) && u.indexOf('webkit/5') != -1,
+                webKit: u.indexOf('AppleWebKit') > -1, 
+                gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1,
+                mobile: !!u.match(/AppleWebKit.*Mobile.*/), 
+                ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), 
+                android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1,
+                iPhone: u.indexOf('iPhone') > -1, 
+                iPad: u.indexOf('iPad') > -1,
+                iWinPhone: u.indexOf('Windows Phone') > -1
+            };
+        },
+        /*
+         * 检测浏览器内核
+         */
+        getInternet: function (){    
+            if(navigator.userAgent.indexOf("MSIE")>0) {    
+              return "MSIE";       //IE浏览器  
+            }  
+            if(isFirefox=navigator.userAgent.indexOf("Firefox")>0){    
+              return "Firefox";     //Firefox浏览器  
+            }  
+            if(isSafari=navigator.userAgent.indexOf("Safari")>0) {    
+              return "Safari";      //Safan浏览器  
+            }  
+            if(isCamino=navigator.userAgent.indexOf("Camino")>0){    
+              return "Camino";   //Camino浏览器  
+            }  
+            if(isMozilla=navigator.userAgent.indexOf("Gecko/")>0){    
+              return "Gecko";    //Gecko浏览器  
+            }    
         },
         /*
          * 表单右侧提示
@@ -403,19 +362,6 @@
             //			}
             //			}
         },
-        //截取URL键值对
-        getRequest: function () {
-            var url = window.location.search;
-            var theRequest = new Object();
-            if (url.indexOf("?") != -1) {
-                var str = url.substr(1);
-                var strs = str.split("&");
-                for (var i = 0; i < strs.length; i++) {
-                    theRequest[strs[i].split("=")[0]] = decodeURIComponent(strs[i].split("=")[1]);
-                }
-            }
-            return theRequest;
-        },
         //表单字数限制
         isNotMax: function(oTextArea){
             var val = oTextArea.value;
@@ -435,15 +381,6 @@
             if(!(len <= oTextArea.getAttribute("maxlength"))){
                 oTextArea.value = oTextArea.value.substring(0,(theLength - (len-maxLength)/2));
             };
-        },
-        //字符串转数组
-        stringToArray:function(str){
-        },
-        //字符串转对象
-        stringToObject:function(str){
-        },
-        //对象转字符串
-        objectToString:function(str){
         },
         /*************************ajax封装区***************************/
         //原生ajax封装
